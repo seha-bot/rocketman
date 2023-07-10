@@ -2,7 +2,13 @@
 #define SEHA_UI
 
 #include <GLFW/glfw3.h>
+
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif /* __APPLE__ */
+
 #include "maths.h"
 
 int sui_loop(GLFWwindow* window);
