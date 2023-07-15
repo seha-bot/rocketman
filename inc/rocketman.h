@@ -8,11 +8,17 @@
 
 typedef struct
 {
-    v3 start, end;
+    v2 start, end;
     v3 color;
 } wall;
 
-wall* load_walls(void);
+typedef struct
+{
+    wall* walls;
+    float height;
+} sector;
+
+sector* load_sectors(void);
 
 #endif /* SEHA_ROCKETMAN */
 

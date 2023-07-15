@@ -3,7 +3,7 @@
 #include "sui.h"
 #include "nec.h"
 
-wall* walls = NULL;
+sector* sectors = NULL;
 
 v2 position = { 0.0f, 0.0f };
 float angle = 0.0f;
@@ -18,20 +18,23 @@ void rotate2D(v2* p)
 void rotateY(v3* p)
 {
     const float ang = angle + atan2(p->z, p->x);
-    *p = (v3){ cos(ang) * v3_length(*p), p->y, sin(ang) * v3_length(*p) };
+    const float len = v2_length((v2){ p->x, p->z });
+    *p = (v3){ cos(ang) * len, p->y, sin(ang) * len };
 }
 
 void draw2D(void)
 {
-    v3 color = { 0.0f, 1.0f, 1.0f };
-
-    for(int i = 0; i < nec_size(walls); i++)
+    for(int i = 0; i < nec_size(sectors); i++)
     {
-        v2 p1 = v2_add((v2){ walls[i].start.x, walls[i].start.z }, position);
-        v2 p2 = v2_add((v2){ walls[i].end.x, walls[i].end.z }, position);
-        rotate2D(&p1);
-        rotate2D(&p2);
-        sui_line(v2_add(center, p1), v2_add(center, p2), color);
+        for(int j = 0; j < nec_size(sectors[i].walls); j++)
+        {
+            wall w = sectors[i].walls[j];
+            v2 p1 = v2_add(w.start, position);
+            v2 p2 = v2_add(w.end, position);
+            rotate2D(&p1);
+            rotate2D(&p2);
+            sui_line(v2_add(center, p1), v2_add(center, p2), w.color);
+        }
     }
 
     sui_line(center, v2_add(center, (v2){ 0.0f, 20.0f }), (v3){0,1,0});
@@ -50,40 +53,42 @@ void sui_rect(v2 pos, v2 size, v3 color)
 
 void draw3D(void)
 {
-    v3 color = { 0.0f, 1.0f, 1.0f };
-
-    for(int i = 0; i < nec_size(walls); i++)
+    for(int i = 0; i < nec_size(sectors); i++)
     {
-        v3 p1 = { walls[i].start.x + position.x, walls[i].start.y, walls[i].start.z + position.y };
-        v3 p2 = { walls[i].end.x + position.x, walls[i].end.y, walls[i].end.z + position.y };
-        rotateY(&p1);
-        rotateY(&p2);
-
-        if(p1.z < 0.0f && p2.z < 0.0f) continue;
-
-        if(p1.z < 0.0f)
+        for(int j = 0; j < nec_size(sectors[i].walls); j++)
         {
-            p1.x = p2.x - (p2.z * (p2.x - p1.x)) / (p2.z - p1.z);
-            p1.z = 1.0f;
+            wall w = sectors[i].walls[j];
+            v3 p1 = { w.start.x + position.x, sectors[i].height, w.start.y + position.y };
+            v3 p2 = { w.end.x + position.x, sectors[i].height, w.end.y + position.y };
+            rotateY(&p1);
+            rotateY(&p2);
+
+            if(p1.z < 0.0f && p2.z < 0.0f) continue;
+
+            if(p1.z < 0.0f)
+            {
+                p1.x = p2.x - (p2.z * (p2.x - p1.x)) / (p2.z - p1.z);
+                p1.z = 1.0f;
+            }
+            else if(p2.z < 0.0f)
+            {
+                p2.x = p1.x - (p1.z * (p1.x - p2.x)) / (p1.z - p2.z);
+                p2.z = 1.0f;
+            }
+
+            p1.x = p1.x * 250.0f / p1.z;
+            p1.y = p1.y * 250.0f / p1.z;
+            p2.x = p2.x * 250.0f / p2.z;
+            p2.y = p2.y * 250.0f / p2.z;
+
+            v2 op1 = v2_add((v2){ p1.x, p1.y }, center);
+            v2 op2 = v2_add((v2){ p2.x, p2.y }, center);
+
+            sui_line(op1, op2, w.color);
+            sui_line(op1, (v2){ op1.x, center.y - p1.y }, w.color);
+            sui_line(op2, (v2){ op2.x, center.y - p2.y }, w.color);
+            sui_line((v2){ op1.x, center.y - p1.y }, (v2){ op2.x, center.y - p2.y }, w.color);
         }
-        else if(p2.z < 0.0f)
-        {
-            p2.x = p1.x - (p1.z * (p1.x - p2.x)) / (p1.z - p2.z);
-            p2.z = 1.0f;
-        }
-
-        p1.x = p1.x * 250.0f / p1.z;
-        p1.y = p1.y * 250.0f / p1.z;
-        p2.x = p2.x * 250.0f / p2.z;
-        p2.y = p2.y * 250.0f / p2.z;
-
-        v2 op1 = v2_add((v2){ p1.x, p1.y }, center);
-        v2 op2 = v2_add((v2){ p2.x, p2.y }, center);
-
-        sui_line(op1, op2, color);
-        sui_line(op1, (v2){ op1.x, center.y - p1.y }, color);
-        sui_line(op2, (v2){ op2.x, center.y - p2.y }, color);
-        sui_line((v2){ op1.x, center.y - p1.y }, (v2){ op2.x, center.y - p2.y }, color);
     }
 }
 
@@ -111,7 +116,8 @@ int sui_loop(GLFWwindow* window)
 
 int main()
 {
-    walls = load_walls();
+    sectors = load_sectors();
+    if(sectors == NULL) return 1;
     sui_init("Prozorce", W, H);
     return 0;
 }

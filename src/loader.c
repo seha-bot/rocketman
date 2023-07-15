@@ -3,23 +3,33 @@
 #include <stdlib.h>
 #include "nec.h"
 
-wall* load_walls(void)
+sector* load_sectors(void)
 {
     FILE* file = fopen("data.wall", "r");
     if(file == NULL) return NULL;
 
-    wall* walls = NULL;
-    float vals[9];
-    char buffer[50];
+    sector* sectors = NULL;
 
     while(1)
     {
-        size_t n;
+        size_t temp;
         char* line = NULL;
-        ssize_t size = getline(&line, &n, file);
+        ssize_t size = getline(&line, &temp, file);
         if(size == -1) break;
 
+        if(line[0] == 's')
+        {
+            sector s = { NULL, atof(line + 2) };
+            nec_push(sectors, s);
+            printf("%f\n", s.height);
+            free(line);
+            line = NULL;
+            continue;
+        }
+
+        float vals[7];
         int valId = 0;
+        char buffer[50];
         int bufferLen = 0;
         for(int i = 0; i < size; i++)
         {
@@ -35,14 +45,14 @@ wall* load_walls(void)
         line = NULL;
 
         wall w = {
-            (v3){ vals[0], vals[1], vals[2] },
-            (v3){ vals[3], vals[4], vals[5] },
-            (v3){ vals[6], vals[7], vals[8] }
+            (v2){ vals[0], vals[1] },
+            (v2){ vals[2], vals[3] },
+            (v3){ vals[4], vals[5], vals[6] }
         };
-        nec_push(walls, w);
+        nec_push(sectors[nec_size(sectors) - 1].walls, w);
     }
 
     fclose(file);
-    return walls;
+    return sectors;
 }
 
