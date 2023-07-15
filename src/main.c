@@ -1,16 +1,9 @@
 #include <stdio.h>
+#include "rocketman.h"
 #include "sui.h"
+#include "nec.h"
 
-#define W 500
-#define H 500
-
-#define WALL_LEN 4
-v2 walls[WALL_LEN][2] = {
-    { (v2){ -50, -50 }, (v2){ 50, -50} },
-    { (v2){ -50, -50 }, (v2){ -50, 50} },
-    { (v2){ 50, 50 }, (v2){ 50, -50} },
-    { (v2){ 50, 50 }, (v2){ -50, 50} }
-};
+wall* walls = NULL;
 
 v2 position = { 0.0f, 0.0f };
 float angle = 0.0f;
@@ -32,10 +25,10 @@ void draw2D(void)
 {
     v3 color = { 0.0f, 1.0f, 1.0f };
 
-    for(int i = 0; i < WALL_LEN; i++)
+    for(int i = 0; i < nec_size(walls); i++)
     {
-        v2 p1 = v2_add(walls[i][0], position);
-        v2 p2 = v2_add(walls[i][1], position);
+        v2 p1 = v2_add((v2){ walls[i].start.x, walls[i].start.z }, position);
+        v2 p2 = v2_add((v2){ walls[i].end.x, walls[i].end.z }, position);
         rotate2D(&p1);
         rotate2D(&p2);
         sui_line(v2_add(center, p1), v2_add(center, p2), color);
@@ -59,10 +52,10 @@ void draw3D(void)
 {
     v3 color = { 0.0f, 1.0f, 1.0f };
 
-    for(int i = 0; i < WALL_LEN; i++)
+    for(int i = 0; i < nec_size(walls); i++)
     {
-        v3 p1 = { walls[i][0].x + position.x, 10.0f, walls[i][0].y + position.y };
-        v3 p2 = { walls[i][1].x + position.x, 10.0f, walls[i][1].y + position.y };
+        v3 p1 = { walls[i].start.x + position.x, walls[i].start.y, walls[i].start.z + position.y };
+        v3 p2 = { walls[i].end.x + position.x, walls[i].end.y, walls[i].end.z + position.y };
         rotateY(&p1);
         rotateY(&p2);
 
@@ -87,7 +80,6 @@ void draw3D(void)
         v2 op1 = v2_add((v2){ p1.x, p1.y }, center);
         v2 op2 = v2_add((v2){ p2.x, p2.y }, center);
 
-        printf("%f %f\n", p1.x, p1.y);
         sui_line(op1, op2, color);
         sui_line(op1, (v2){ op1.x, center.y - p1.y }, color);
         sui_line(op2, (v2){ op2.x, center.y - p2.y }, color);
@@ -112,11 +104,6 @@ int sui_loop(GLFWwindow* window)
     if(glfwGetKey(window, GLFW_KEY_L)) angle += 0.03f;
     if(glfwGetKey(window, GLFW_KEY_H)) angle -= 0.03f;
 
-    if(glfwGetKey(window, GLFW_KEY_G))
-    {
-        printf("DEBUG\n");
-    }
-
     if(glfwGetKey(window, GLFW_KEY_SPACE)) draw2D();
     else draw3D();
     return 0;
@@ -124,6 +111,7 @@ int sui_loop(GLFWwindow* window)
 
 int main()
 {
+    walls = load_walls();
     sui_init("Prozorce", W, H);
     return 0;
 }
