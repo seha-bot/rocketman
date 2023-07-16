@@ -5,8 +5,8 @@
 
 sector* sectors = NULL;
 
-v3 position = { 0.0f, 0.0f, 0.0f };
-float angle = 0.0f;
+v3 position = { 90.0f, 0.0f, -150.0f };
+float angle = -0.2f;
 const v2 center = { W / 2.0f, H / 2.0f };
 
 void rotateY(v3* p, float angle)
@@ -18,8 +18,8 @@ void rotateY(v3* p, float angle)
 
 void drawWall2D(wall w)
 { // This is a temporary function. Delete later
-    v3 p1 = { w.start.x + position.x, 0.0f, w.start.y + position.z };
-    v3 p2 = { w.end.x + position.x, 0.0f, w.end.y + position.z };
+    v3 p1 = { w.start.x - position.x, 0.0f, w.start.y - position.z };
+    v3 p2 = { w.end.x - position.x, 0.0f, w.end.y - position.z };
     rotateY(&p1, angle);
     rotateY(&p2, angle);
     const v2 op1 = { center.x + p1.x, center.y + p1.z };
@@ -30,8 +30,8 @@ void drawWall2D(wall w)
 
 void drawWall3D(wall w, float height)
 {
-    v3 p1 = v3_add((v3){ w.start.x, height, w.start.y }, position);
-    v3 p2 = v3_add((v3){ w.end.x, height, w.end.y }, position);
+    v3 p1 = v3_sub((v3){ w.start.x, 0.0f, w.start.y }, position);
+    v3 p2 = v3_sub((v3){ w.end.x, 0.0f, w.end.y }, position);
     rotateY(&p1, angle);
     rotateY(&p2, angle);
 
@@ -48,38 +48,44 @@ void drawWall3D(wall w, float height)
         p2.z = 1.0f;
     }
 
-    // TODO no need for op1 and op2.
-    // Instead, use p1 and p2.
-    // Update maths.h to allow v2 with v3 operations
-    v2 op1 = v2_mulf((v2){ p1.x, p1.y }, 200.0f / p1.z);
-    v2 op2 = v2_mulf((v2){ p2.x, p2.y }, 200.0f / p2.z);
-    op1.x += center.x;
-    op2.x += center.x;
+    const float v1 = 200.0f / p1.z;
+    const float v2 = 200.0f / p2.z;
 
-    if(op2.x <= op1.x || op2.x <= 0.0f || op1.x >= W) return;
-    if(op1.x <= 0.0f)
+    float x1 = p1.x * v1 + center.x;
+    float x2 = p2.x * v2 + center.x;
+
+    float y1B = (p1.y - height) * v1;
+    float y2B = (p2.y - height) * v2;
+    float y1T = (p1.y + height) * v1;
+    float y2T = (p2.y + height) * v2;
+
+    if(x2 <= x1 || x2 <= 0.0f || x1 >= W) return;
+    if(x1 <= 0.0f)
     {
-        op1.y = op2.y - (op2.x * (op2.y - op1.y)) / (op2.x - op1.x);
-        op1.x = 0.0f;
+        y1T = y2T - (x2 * (y2T - y1T)) / (x2 - x1);
+        y1B = y2B - (x2 * (y2B - y1B)) / (x2 - x1);
+        x1 = 0.0f;
     }
-    if(op2.x > W)
+    if(x2 > W)
     {
-        op2.y = (op1.y - op2.y) * (W - op2.x) / (op1.x - op2.x) + op2.y;
-        op2.x = W;
+        y2T = (y1T - y2T) * (W - x2) / (x1 - x2) + y2T;
+        y2B = (y1B - y2B) * (W - x2) / (x1 - x2) + y2B;
+        x2 = W;
     }
 
-    const float len = op2.x - op1.x;
+    const float len = x2 - x1;
     if(len < 1.0f) return;
-    const float ang = (op2.y - op1.y) / len;
+    const float angT = (y2T - y1T) / len;
+    const float angB = (y2B - y1B) / len;
 
     for(int i = 0; i < len; i++)
     {
-        for(int j = 0; j < min(op1.y, center.y); j++)
+        for(int j = max(y1B, -center.y); j < min(y1T, center.y); j++)
         {
-            sui_pixel(op1.x + i, center.y + j, w.color);
-            sui_pixel(op1.x + i, center.y - j, w.color);
+            sui_pixel(x1 + i, center.y + j, w.color);
         }
-        op1.y += ang;
+        y1T += angT;
+        y1B += angB;
     }
 }
 
@@ -91,11 +97,11 @@ int sui_loop(GLFWwindow* window, float dt)
     const int cros = glfwGetKey(window, GLFW_KEY_D) - glfwGetKey(window, GLFW_KEY_A);
     const int fly  = glfwGetKey(window, GLFW_KEY_SPACE) - glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
     const v2 rot = v2_mulf((v2){ cos(angle), sin(angle) }, 80.0f * dt);
-    position.z -= rot.x * main;
-    position.x -= rot.y * main;
-    position.z += rot.y * cros;
-    position.x -= rot.x * cros;
-    position.y -= fly * 80.0f * dt;
+    position.z += rot.x * main;
+    position.x += rot.y * main;
+    position.z -= rot.y * cros;
+    position.x += rot.x * cros;
+    position.y += fly * 80.0f * dt;
 
     if(glfwGetKey(window, GLFW_KEY_L)) angle += 3.0f * dt;
     if(glfwGetKey(window, GLFW_KEY_H)) angle -= 3.0f * dt;
