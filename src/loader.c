@@ -21,7 +21,6 @@ sector* load_sectors(void)
         {
             sector s = { NULL, atof(line + 2) };
             nec_push(sectors, s);
-            printf("%f\n", s.height);
             free(line);
             line = NULL;
             continue;

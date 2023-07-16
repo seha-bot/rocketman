@@ -3,8 +3,8 @@
 
 #include "maths.h"
 
-#define W 500
-#define H 500
+#define W 320
+#define H 300
 
 typedef struct
 {

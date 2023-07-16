@@ -13,12 +13,18 @@ void sui_init(const char *title, int width, int height)
     glLoadIdentity();
     glOrtho(0, width, 0, height, 0, 1);
 
+    float oldTime = 0.0f, dt = 0.0f;
     while(!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
-        if(sui_loop(window) == 1) break;
+
+        float time = glfwGetTime();
+        dt = time - oldTime;
+        oldTime = time;
+
+        if(sui_loop(window, dt) == 1) break;
         glFlush();
         glfwSwapBuffers(window);
     }
