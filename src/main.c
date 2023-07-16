@@ -10,12 +10,6 @@ v2 position = { 0.0f, 0.0f };
 float angle = 0.0f;
 const v2 center = { W / 2.0f, H / 2.0f };
 
-void rotate2D(v2* p)
-{
-    const float ang = angle + atan2(p->y, p->x);
-    *p = v2_mulf((v2){ cos(ang), sin(ang) }, v2_length(*p));
-}
-
 void rotateY(v3* p)
 {
     const float ang = angle + atan2(p->z, p->x);
@@ -29,67 +23,31 @@ void draw2D(void)
     {
         for(int j = 0; j < nec_size(sectors[i].walls); j++)
         {
-            wall w = sectors[i].walls[j];
-            v2 p1 = v2_add(w.start, position);
-            v2 p2 = v2_add(w.end, position);
-            rotate2D(&p1);
-            rotate2D(&p2);
-            sui_line(v2_add(center, p1), v2_add(center, p2), w.color);
+            const wall w = sectors[i].walls[j];
+            v3 p1 = { w.start.x + position.x, 0.0f, w.start.y + position.y };
+            v3 p2 = { w.end.x + position.x, 0.0f, w.end.y + position.y };
+            rotateY(&p1);
+            rotateY(&p2);
+            v2 op1 = { center.x + p1.x, center.y + p1.z };
+            v2 op2 = { center.x + p2.x, center.y + p2.z };
+            sui_line(op1, op2, w.color);
         }
     }
 
     sui_line(center, v2_add(center, (v2){ 0.0f, 20.0f }), (v3){0,1,0});
 }
 
-void fillWall(v2 p1, v2 p2, v3 color)
-{
-    p1.x += center.x;
-    p2.x += center.x;
-    if(p2.x <= p1.x) return;
-    if(p2.x <= 0.0f || p1.x >= W) return;
-
-    if(p1.x <= 0.0f)
-    {
-        p1.y = p2.y - (p2.x * (p2.y - p1.y)) / (p2.x - p1.x);
-        p1.x = 0.0f;
-    }
-    if(p2.x > W)
-    {
-        p2.y = (p1.y - p2.y) * (W - p2.x) / (p1.x - p2.x) + p2.y;
-        p2.x = W;
-    }
-
-    float len = p2.x - p1.x;
-    if(len < 1.0f) return;
-    float ang = (p2.y - p1.y) / len;
-
-    for(int i = 0; i < len; i++)
-    {
-        for(int j = 0; j < min(p1.y, center.y); j++)
-        {
-            sui_pixel(p1.x + i, center.y + j, color.x, color.y, color.z);
-            sui_pixel(p1.x + i, center.y - j, color.x, color.y, color.z);
-        }
-        p1.y += ang;
-    }
-}
-
-void draw3D(GLFWwindow* window)
+void draw3D(void)
 {
     for(int i = 0; i < nec_size(sectors); i++)
     {
         for(int j = 0; j < nec_size(sectors[i].walls); j++)
         {
-            wall w = sectors[i].walls[j];
+            const wall w = sectors[i].walls[j];
             v3 p1 = { w.start.x + position.x, sectors[i].height, w.start.y + position.y };
             v3 p2 = { w.end.x + position.x, sectors[i].height, w.end.y + position.y };
             rotateY(&p1);
             rotateY(&p2);
-
-            if(glfwGetKey(window, GLFW_KEY_G))
-            {
-                printf("DEBUG\n");
-            }
 
             if(p1.z < 0.0f && p2.z < 0.0f) continue;
 
@@ -104,25 +62,37 @@ void draw3D(GLFWwindow* window)
                 p2.z = 1.0f;
             }
 
-            p1.x = p1.x * 200.0f / p1.z;
-            p1.y = p1.y * 200.0f / p1.z;
-            p2.x = p2.x * 200.0f / p2.z;
-            p2.y = p2.y * 200.0f / p2.z;
+            v2 op1 = v2_mulf((v2){ p1.x, p1.y }, 200.0f / p1.z);
+            v2 op2 = v2_mulf((v2){ p2.x, p2.y }, 200.0f / p2.z);
+            op1.x += center.x;
+            op2.x += center.x;
 
-            v2 op1 = { p1.x, p1.y };
-            v2 op2 = { p2.x, p2.y };
+            if(op2.x <= op1.x || op2.x <= 0.0f || op1.x >= W) continue;
 
-            if(glfwGetKey(window, GLFW_KEY_C))
+            if(op1.x <= 0.0f)
             {
-                printf("WIREFRAME P1(%f %f) P2(%f %f)\n", op1.x, op1.y, op2.x, op2.y);
-                op1 = v2_add(op1, center);
-                op2 = v2_add(op2, center);
-                sui_line(op1, op2, w.color);
-                sui_line(op1, (v2){ op1.x, center.y - p1.y }, w.color);
-                sui_line(op2, (v2){ op2.x, center.y - p2.y }, w.color);
-                sui_line((v2){ op1.x, center.y - p1.y }, (v2){ op2.x, center.y - p2.y }, w.color);
+                op1.y = op2.y - (op2.x * (op2.y - op1.y)) / (op2.x - op1.x);
+                op1.x = 0.0f;
             }
-            else fillWall(op1, op2, w.color);
+            if(op2.x > W)
+            {
+                op2.y = (op1.y - op2.y) * (W - op2.x) / (op1.x - op2.x) + op2.y;
+                op2.x = W;
+            }
+
+            const float len = op2.x - op1.x;
+            if(len < 1.0f) continue;
+            const float ang = (op2.y - op1.y) / len;
+
+            for(int i = 0; i < len; i++)
+            {
+                for(int j = 0; j < min(op1.y, center.y); j++)
+                {
+                    sui_pixel(op1.x + i, center.y + j, w.color);
+                    sui_pixel(op1.x + i, center.y - j, w.color);
+                }
+                op1.y += ang;
+            }
         }
     }
 }
@@ -149,7 +119,7 @@ int sui_loop(GLFWwindow* window)
     if(glfwGetKey(window, GLFW_KEY_H)) angle -= 0.03f;
 
     if(glfwGetKey(window, GLFW_KEY_SPACE)) draw2D();
-    else draw3D(window);
+    else draw3D();
 
     float time = glfwGetTime();
     dt = time - oldTime;

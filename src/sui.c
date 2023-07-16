@@ -26,12 +26,13 @@ void sui_init(const char *title, int width, int height)
     glfwTerminate();
 }
 
-void sui_pixel(int x, int y, float r, float g, float b)
+void sui_pixel(int x, int y, v3 color)
 {
-    r = clamp(r, 0.0, 1.0);
-    g = clamp(g, 0.0, 1.0);
-    b = clamp(b, 0.0, 1.0);
-    glColor3ub(r * 255.0, g * 255.0, b * 255.0);
+    color.x = clamp(color.x, 0.0f, 1.0f);
+    color.y = clamp(color.y, 0.0f, 1.0f);
+    color.z = clamp(color.z, 0.0f, 1.0f);
+    color = v3_mulf(color, 255.0f);
+    glColor3ub(color.x, color.y, color.z);
     glBegin(GL_POINTS);
     glVertex2i(x, y);
     glEnd();
@@ -51,7 +52,7 @@ void sui_line(v2 start, v2 end, v3 color)
 
     for(int i = 0; i < len; i++)
     {
-        sui_pixel(start.x, start.y, color.x, color.y, color.z);
+        sui_pixel(start.x, start.y, color);
         start = v2_add(start, ratio);
     }
 }
