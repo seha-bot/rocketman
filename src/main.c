@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "rocketman.h"
 #include "sui.h"
 #include "nec.h"
@@ -40,18 +41,40 @@ void draw2D(void)
     sui_line(center, v2_add(center, (v2){ 0.0f, 20.0f }), (v3){0,1,0});
 }
 
-void sui_rect(v2 pos, v2 size, v3 color)
+void fillWall(v2 p1, v2 p2, v3 color)
 {
-    for(int y = pos.y; y < size.y; y++)
+    p1.x += center.x;
+    p2.x += center.x;
+    if(p2.x <= p1.x) return;
+    if(p2.x <= 0.0f || p1.x >= W) return;
+
+    if(p1.x <= 0.0f)
     {
-        for(int x = pos.x; x < size.x; x++)
+        p1.y = p2.y - (p2.x * (p2.y - p1.y)) / (p2.x - p1.x);
+        p1.x = 0.0f;
+    }
+    if(p2.x > W)
+    {
+        p2.y = (p1.y - p2.y) * (W - p2.x) / (p1.x - p2.x) + p2.y;
+        p2.x = W;
+    }
+
+    float len = p2.x - p1.x;
+    if(len < 1.0f) return;
+    float ang = (p2.y - p1.y) / len;
+
+    for(int i = 0; i < len; i++)
+    {
+        for(int j = 0; j < min(p1.y, center.y); j++)
         {
-            sui_pixel(x, y, color.x, color.y, color.z);
+            sui_pixel(p1.x + i, center.y + j, color.x, color.y, color.z);
+            sui_pixel(p1.x + i, center.y - j, color.x, color.y, color.z);
         }
+        p1.y += ang;
     }
 }
 
-void draw3D(void)
+void draw3D(GLFWwindow* window)
 {
     for(int i = 0; i < nec_size(sectors); i++)
     {
@@ -63,34 +86,50 @@ void draw3D(void)
             rotateY(&p1);
             rotateY(&p2);
 
+            if(glfwGetKey(window, GLFW_KEY_G))
+            {
+                printf("DEBUG\n");
+            }
+
             if(p1.z < 0.0f && p2.z < 0.0f) continue;
 
-            if(p1.z < 0.0f)
+            if(p1.z <= 0.0f)
             {
                 p1.x = p2.x - (p2.z * (p2.x - p1.x)) / (p2.z - p1.z);
                 p1.z = 1.0f;
             }
-            else if(p2.z < 0.0f)
+            else if(p2.z <= 0.0f)
             {
                 p2.x = p1.x - (p1.z * (p1.x - p2.x)) / (p1.z - p2.z);
                 p2.z = 1.0f;
             }
 
-            p1.x = p1.x * 250.0f / p1.z;
-            p1.y = p1.y * 250.0f / p1.z;
-            p2.x = p2.x * 250.0f / p2.z;
-            p2.y = p2.y * 250.0f / p2.z;
+            p1.x = p1.x * 200.0f / p1.z;
+            p1.y = p1.y * 200.0f / p1.z;
+            p2.x = p2.x * 200.0f / p2.z;
+            p2.y = p2.y * 200.0f / p2.z;
 
-            v2 op1 = v2_add((v2){ p1.x, p1.y }, center);
-            v2 op2 = v2_add((v2){ p2.x, p2.y }, center);
+            v2 op1 = { p1.x, p1.y };
+            v2 op2 = { p2.x, p2.y };
 
-            sui_line(op1, op2, w.color);
-            sui_line(op1, (v2){ op1.x, center.y - p1.y }, w.color);
-            sui_line(op2, (v2){ op2.x, center.y - p2.y }, w.color);
-            sui_line((v2){ op1.x, center.y - p1.y }, (v2){ op2.x, center.y - p2.y }, w.color);
+            if(glfwGetKey(window, GLFW_KEY_C))
+            {
+                printf("WIREFRAME P1(%f %f) P2(%f %f)\n", op1.x, op1.y, op2.x, op2.y);
+                op1 = v2_add(op1, center);
+                op2 = v2_add(op2, center);
+                sui_line(op1, op2, w.color);
+                sui_line(op1, (v2){ op1.x, center.y - p1.y }, w.color);
+                sui_line(op2, (v2){ op2.x, center.y - p2.y }, w.color);
+                sui_line((v2){ op1.x, center.y - p1.y }, (v2){ op2.x, center.y - p2.y }, w.color);
+            }
+            else fillWall(op1, op2, w.color);
         }
     }
 }
+
+int fps = 0;
+float oldTime = 0.0f, dt = 0.0f;
+float sec = 0.0f;
 
 int sui_loop(GLFWwindow* window)
 {
@@ -110,7 +149,21 @@ int sui_loop(GLFWwindow* window)
     if(glfwGetKey(window, GLFW_KEY_H)) angle -= 0.03f;
 
     if(glfwGetKey(window, GLFW_KEY_SPACE)) draw2D();
-    else draw3D();
+    else draw3D(window);
+
+    float time = glfwGetTime();
+    dt = time - oldTime;
+    oldTime = time;
+
+    sec += dt;
+    fps++;
+    if(sec >= 1.0f)
+    {
+        sec -= 1.0f;
+        printf("FPS = %d\n", fps);
+        fps = 0;
+    }
+
     return 0;
 }
 
