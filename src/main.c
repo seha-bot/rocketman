@@ -51,41 +51,25 @@ void drawWall3D(wall w, float height)
     const float v1 = 200.0f / p1.z;
     const float v2 = 200.0f / p2.z;
 
-    float x1 = p1.x * v1 + center.x;
-    float x2 = p2.x * v2 + center.x;
+    p1.x = p1.x * v1 + center.x;
+    p1.z = (p1.y - height) * v1 + center.y;
+    p1.y = (p1.y + height) * v1 + center.y;
+    p2.x = p2.x * v2 + center.x;
+    p2.z = (p2.y - height) * v2 + center.y;
+    p2.y = (p2.y + height) * v2 + center.y;
 
-    float y1B = (p1.y - height) * v1;
-    float y2B = (p2.y - height) * v2;
-    float y1T = (p1.y + height) * v1;
-    float y2T = (p2.y + height) * v2;
+    if(p2.x - p1.x < 1.0f || p2.x <= 0.0f || p1.x >= W) return;
+    const float angB = (p2.z - p1.z) / (p2.x - p1.x);
+    const float angT = (p2.y - p1.y) / (p2.x - p1.x);
 
-    if(x2 <= x1 || x2 <= 0.0f || x1 >= W) return;
-    if(x1 <= 0.0f)
+    for(float i = max(p1.x, 0.0f); i < min(p2.x, W); i++)
     {
-        y1T = y2T - (x2 * (y2T - y1T)) / (x2 - x1);
-        y1B = y2B - (x2 * (y2B - y1B)) / (x2 - x1);
-        x1 = 0.0f;
-    }
-    if(x2 > W)
-    {
-        y2T = (y1T - y2T) * (W - x2) / (x1 - x2) + y2T;
-        y2B = (y1B - y2B) * (W - x2) / (x1 - x2) + y2B;
-        x2 = W;
-    }
-
-    const float len = x2 - x1;
-    if(len < 1.0f) return;
-    const float angT = (y2T - y1T) / len;
-    const float angB = (y2B - y1B) / len;
-
-    for(int i = 0; i < len; i++)
-    {
-        for(int j = max(y1B, -center.y); j < min(y1T, center.y); j++)
+        const int a = max(p1.z + angB * (i - p1.x), 0.0f);
+        const int b = min(p1.y + angT * (i - p1.x), H);
+        for(int j = a; j < b; j++)
         {
-            sui_pixel(x1 + i, center.y + j, w.color);
+            sui_pixel(i, j, w.color);
         }
-        y1T += angT;
-        y1B += angB;
     }
 }
 
