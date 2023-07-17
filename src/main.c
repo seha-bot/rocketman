@@ -17,7 +17,7 @@ void rotateY(v3* p, float angle)
 }
 
 void drawWall2D(wall w)
-{ // This is a temporary function. Delete later
+{
     v3 p1 = { w.start.x - position.x, 0.0f, w.start.y - position.z };
     v3 p2 = { w.end.x - position.x, 0.0f, w.end.y - position.z };
     rotateY(&p1, angle);
@@ -62,14 +62,16 @@ void drawWall3D(wall w, float height)
     const float angB = (p2.z - p1.z) / (p2.x - p1.x);
     const float angT = (p2.y - p1.y) / (p2.x - p1.x);
 
+    p1.z += angB * max(-p1.x, 0.0f);
+    p1.y += angT * max(-p1.x, 0.0f);
     for(float i = max(p1.x, 0.0f); i < min(p2.x, W); i++)
     {
-        const int a = max(p1.z + angB * (i - p1.x), 0.0f);
-        const int b = min(p1.y + angT * (i - p1.x), H);
-        for(int j = a; j < b; j++)
+        for(int j = max(p1.z, 0.0f); j < min(p1.y, H); j++)
         {
             sui_pixel(i, j, w.color);
         }
+        p1.z += angB;
+        p1.y += angT;
     }
 }
 
