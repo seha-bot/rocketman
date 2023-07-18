@@ -1,11 +1,15 @@
 #include "sui.h"
 
-void sui_init(const char *title, int width, int height)
+static GLFWwindow* window;
+static float height_copy;
+
+void sui_init(const char *title, int width, int height, int (*loop)(float dt))
 {
+    height_copy = height;
     if(!glfwInit()) return;
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
-    GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
+    window = glfwCreateWindow(width, height, title, NULL, NULL);
     if(!window) return;
     glfwMakeContextCurrent(window);
 
@@ -24,12 +28,37 @@ void sui_init(const char *title, int width, int height)
         dt = time - oldTime;
         oldTime = time;
 
-        if(sui_loop(window, dt) == 1) break;
+        if(loop(dt) == 1) break;
         glFlush();
         glfwSwapBuffers(window);
     }
 
     glfwTerminate();
+}
+
+int sui_key(int key)
+{
+    return glfwGetKey(window, key);
+}
+
+int sui_mouse_left(void)
+{
+    return glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS;
+}
+int sui_mouse_right(void)
+{
+    return glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS;
+}
+int sui_mouse_middle(void)
+{
+    return glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3) == GLFW_PRESS;
+}
+
+v2 sui_mouse_pos(void)
+{
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    return (v2){ x, height_copy - 1.0f - y };
 }
 
 void sui_pixel(int x, int y, v3 color)

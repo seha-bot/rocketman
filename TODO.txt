@@ -1,0 +1,8 @@
+Figure out drawing orders (inside rooms, outside rooms, regular 3d box objects)
+
+bottom, middle, top wall segment (maybe?)
+
+idk :(
+
+editor
+

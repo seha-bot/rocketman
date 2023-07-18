@@ -2,9 +2,11 @@
 #define SEHA_ROCKETMAN
 
 #include "maths.h"
+#include "sui.h"
 
-#define W 320
-#define H 300
+#define W 320.0f
+#define H 300.0f
+static const v2 CENTER = { W / 2.0f, H / 2.0f };
 
 typedef struct
 {
@@ -19,6 +21,7 @@ typedef struct
 } sector;
 
 sector* load_sectors(void);
+int editor_loop(float dt);
 
 #endif /* SEHA_ROCKETMAN */
 
