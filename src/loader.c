@@ -55,3 +55,21 @@ sector* load_sectors(void)
     return sectors;
 }
 
+void save_sectors(const sector* sectors)
+{ // TODO connected walls can be optimized to take less space
+    FILE* file = fopen("data.wall", "w");
+    size_t wallCount = 0;
+    for(int i = 0; i < nec_size(sectors); i++)
+    {
+        fprintf(file, "s 40\n");
+        for(int j = 0; j < nec_size(sectors[i].walls); j++)
+        {
+            wall w = sectors[i].walls[j];
+            fprintf(file, "%f %f %f %f 1 1 1\n", w.start.x, w.start.y, w.end.x, w.end.y);
+            wallCount++;
+        }
+    }
+    fclose(file);
+    printf("Written %lu sectors, %lu walls.\n", nec_size(sectors), wallCount);
+}
+

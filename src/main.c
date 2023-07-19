@@ -83,7 +83,7 @@ static int game_loop(float dt)
 
 int main(int argc, char *argv[])
 {
-    // if(argc > 1)
+    if(argc > 1)
     {
         sui_init("Editor", W, H, editor_loop);
         return 0;

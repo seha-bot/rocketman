@@ -28,6 +28,7 @@ v2 v2_divf(v2 a, float b);
 int v2_eq(v2 a, v2 b);
 float v2_length(v2);
 v2 v2_normal(v2);
+v2 v2_rotate(v2, float angle);
 
 v3 v3_add(v3 a, v3 b);
 v3 v3_addf(v3 a, float b);

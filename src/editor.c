@@ -1,4 +1,5 @@
 #include "rocketman.h"
+#include <stdio.h>
 #include "nec.h"
 
 static const v2 DOT_SIZE = { 10.0f, 10.0f };
@@ -91,19 +92,7 @@ static void drag_wall(sector* s)
 
             if(v2_eq(s->walls[draggedWallId].start, s->walls[draggedWallId].end))
             {
-                if(nec_size(s->walls) < 2)
-                {
-                    nec_pop(s->walls);
-                }
-                else
-                {
-                    for(size_t i = draggedWallId; i < nec_size(s->walls) - 1; i++)
-                    {
-                        s->walls[i] = s->walls[i + 1];
-                    }
-                    nec_pop(s->walls);
-                }
-                // nec_erase(s->walls, draggedWallId);
+                nec_erase(s->walls, draggedWallId);
             }
         }
         draggedWallId = -1;
@@ -136,13 +125,16 @@ static void draw_wall(wall w)
     sui_rect(v2_sub(p1, v2_mulf(DOT_SIZE, 0.5f)), DOT_SIZE, color1);
     const v3 color2 = is_touching_corner(p2) ? DOT_COLOR_SELECTED : DOT_COLOR;
     sui_rect(v2_sub(p2, v2_mulf(DOT_SIZE, 0.5f)), DOT_SIZE, color2);
+    const v2 mid = v2_add(p1, v2_mulf(v2_sub(p2, p1), 0.5f));
+    const v2 midToP2 = v2_rotate(v2_normal(v2_sub(mid, p2)), 1.57f);
+    sui_line(mid, v2_add(mid, v2_mulf(midToP2, 10.0f)), color1);
 }
 
 int editor_loop(float dt)
 {
     if(sui_key(GLFW_KEY_Q)) return 1;
 
-    if(sectors == NULL) nec_push(sectors, ((sector){ NULL, 0.0f }));
+    if(sectors == NULL) sectors = load_sectors();
     drag_wall(sectors);
 
     for(int i = 0; i < nec_size(sectors); i++)
@@ -152,6 +144,8 @@ int editor_loop(float dt)
             draw_wall(sectors[i].walls[j]);
         }
     }
+
+    if(sui_key(GLFW_KEY_ENTER)) save_sectors(sectors);
 
     return 0;
 }

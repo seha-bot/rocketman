@@ -21,6 +21,7 @@ typedef struct
 } sector;
 
 sector* load_sectors(void);
+void save_sectors(const sector* sectors);
 int editor_loop(float dt);
 
 #endif /* SEHA_ROCKETMAN */
